@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>YAHAD 2026 — Mystery Puzzle</title>
+<style>
+:root{--ink:#1f2937;--muted:#6b7280;--card:#fff;--line:#e5e7eb;--accent:#30343b}
+*{box-sizing:border-box} body{margin:0;background:#faf8f3;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:480px;margin:auto;padding:26px 16px 42px;text-align:center}
+.kicker{font-size:12px;letter-spacing:.28em;font-weight:800;color:var(--muted)}
+h1{font-size:28px;margin:8px 0 7px}.sub{font-size:14px;line-height:1.5;color:var(--muted);margin:0 8px 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:15px}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:12px}
+#board{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;aspect-ratio:1;width:100%;overflow:hidden;border-radius:16px;background:#eee}
+.tile{border:0;padding:0;position:relative;overflow:hidden;background:#fff;aspect-ratio:1;touch-action:manipulation;outline:none}
+.tile.selected{box-shadow:inset 0 0 0 4px #111;transform:scale(.95)}
+.piece{position:absolute;width:300%;height:300%;max-width:none;pointer-events:none;user-select:none}
+button.action{margin-top:15px;border:0;border-radius:13px;background:#24272c;color:white;min-height:48px;padding:0 20px;font-weight:750;font-size:15px}
+#reveal{display:none;margin-top:15px;border-radius:16px;padding:18px;background:#f7f5ef;border:1px solid var(--line)}
+#reveal .done{font-size:12px;letter-spacing:.18em;font-weight:800;color:var(--muted)}
+#reveal .letter{font-size:58px;font-weight:900;line-height:1.05;margin:5px 0}
+#reveal .team{font-size:18px;font-weight:800}.tag{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
+.note{font-size:11px;color:#8b8b8b;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+<div class="kicker">YAHAD 2026</div>
+<h1>Find where you belong.</h1>
+<p class="sub">Solve the mystery puzzle. Your team will be revealed when every piece is in place.</p>
+<section class="card">
+<div class="top"><span id="status">Tap any two pieces to swap them.</span><strong id="moves">0 moves</strong></div>
+<div id="board" aria-label="YAHAD digital puzzle"></div>
+<div id="reveal" aria-live="polite">
+  <div class="done">PUZZLE COMPLETE ✨</div>
+  <div id="letter" class="letter"></div>
+  <div id="team" class="team"></div>
+  <div class="tag">Find the others who belong with you.<br><strong>YAHAD — Together, As One.</strong></div>
+</div>
+<button id="shuffle" class="action" type="button">Shuffle again</button>
+</section>
+<p class="note">Keep your result to yourself until the organizer says “Find your team!”</p>
+</main>
+<script>
+const teams={
+ y:{letter:"Y",name:"TEAM Y — RED",img:"y-red.png"},
+ ag:{letter:"A",name:"TEAM A — GREEN",img:"a-green.png"},
+ h:{letter:"H",name:"TEAM H — YELLOW",img:"h-yellow.png"},
+ ab:{letter:"A",name:"TEAM A — PASTEL BROWN",img:"a-brown.png"},
+ d:{letter:"D",name:"TEAM D — BLUE",img:"d-blue.png"}
+};
+const q=new URLSearchParams(location.search);
+const key=teams[q.get("team")]?q.get("team"):"y", team=teams[key];
+const board=document.getElementById("board"),statusEl=document.getElementById("status"),movesEl=document.getElementById("moves"),reveal=document.getElementById("reveal");
+document.getElementById("letter").textContent=team.letter;
+document.getElementById("team").textContent=team.name;
+let order=[],selected=null,moves=0,done=false;
+function scramble(){
+ order=[0,1,2,3,4,5,6,7,8];
+ do{for(let i=8;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}}while(order.every((v,i)=>v===i));
+}
+function render(){
+ board.innerHTML="";
+ order.forEach((piece,pos)=>{
+  const b=document.createElement("button"); b.type="button"; b.className="tile"+(selected===pos?" selected":"");
+  b.setAttribute("aria-label","Puzzle piece "+(pos+1));
+  const r=Math.floor(piece/3),c=piece%3,im=document.createElement("img");
+  im.className="piece"; im.src=team.img; im.alt=""; im.style.left=(-c*100)+"%"; im.style.top=(-r*100)+"%";
+  b.appendChild(im); b.addEventListener("click",()=>pick(pos)); board.appendChild(b);
+ });
+}
+function pick(pos){
+ if(done)return;
+ if(selected===null){selected=pos;statusEl.textContent="Now choose another piece.";render();return}
+ if(selected===pos){selected=null;statusEl.textContent="Selection cleared.";render();return}
+ [order[selected],order[pos]]=[order[pos],order[selected]];selected=null;moves++;movesEl.textContent=moves+(moves===1?" move":" moves");render();
+ if(order.every((v,i)=>v===i)){done=true;statusEl.textContent="You solved it!";reveal.style.display="block";}
+ else statusEl.textContent="Keep going — the mystery is still hidden.";
+}
+function reset(){moves=0;selected=null;done=false;movesEl.textContent="0 moves";reveal.style.display="none";statusEl.textContent="Tap any two pieces to swap them.";scramble();render()}
+document.getElementById("shuffle").addEventListener("click",reset);reset();
+</script>
+</body>
+</html>
